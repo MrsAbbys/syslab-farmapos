@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Medicine {
+  id             Int             @id @default(autoincrement())
+  code           String          @unique
+  name           String
+  description    String?
+  batchNumber    String          // Control estricto de lote
+  expirationDate DateTime        // Control de medicamentos vencidos
+  stock          Int             @default(0)
+  price          Float
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  invoiceItems   InvoiceItem[]
+
+  @@map("medicines")
+}
+
+model SaleInvoice {
+  id            Int           @id @default(autoincrement())
+  invoiceNumber String        @unique
+  customerName  String        @default("Venta Mostrador")
+  totalAmount   Float         @default(0.0)
+  createdAt     DateTime      @default(now())
+  items         InvoiceItem[]
+
+  @@map("sale_invoices")
+}
+
+model InvoiceItem {
+  id            Int         @id @default(autoincrement())
+  quantity      Int
+  unitPrice     Float
+  subtotal      Float
+  medicineId    Int
+  medicine      Medicine    @relation(fields: [medicineId], references: [id])
+  saleInvoiceId Int
+  saleInvoice   SaleInvoice @relation(fields: [saleInvoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
