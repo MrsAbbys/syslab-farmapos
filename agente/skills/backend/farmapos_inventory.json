@@ -1,0 +1,11 @@
+{
+  "module": "SysLab-FarmaPOS-Inventory",
+  "target": "PostgreSQL",
+  "version": "2.0",
+  "rules_enforced": [
+    "block_expired_medicines",
+    "require_batch_number",
+    "atomic_stock_decrement",
+    "transactional_invoicing"
+  ]
+}

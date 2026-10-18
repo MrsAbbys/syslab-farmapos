@@ -1,0 +1,6 @@
+{
+  "skill": "TasteSkill-Prisma-Validator",
+  "enforce_orm": true,
+  "disallow_raw_sql": true,
+  "migrations_tracked": true
+}
