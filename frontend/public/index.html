@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FarmaPOS - Farmacia y Punto de Venta</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-deep: #0c4a6e;
+      --cyan-light: #e0f2fe;
+      --bg: #f0f9ff;
+      --card-bg: #ffffff;
+      --border: #bae6fd;
+      --border-dark: #38bdf8;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --danger: #ef4444;
+      --admin-color: #4f46e5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); overflow-x: hidden; }
+
+    header {
+      background: #ffffff;
+      border-bottom: 2px solid var(--border-dark);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.06);
+    }
+    .brand-container { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .brand-svg { width: 34px; height: 34px; }
+    .brand-title { font-size: 1.45rem; font-weight: 800; display: flex; align-items: center; }
+    .brand-title .part-farma { color: #38bdf8; }
+    .brand-title .part-pos { color: #0369a1; font-weight: 900; }
+
+    .user-nav { display: flex; align-items: center; gap: 8px; }
+    .btn-header {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+    .btn-header:hover { background: var(--primary-dark); }
+    .btn-admin { background: var(--admin-color); }
+    .btn-admin:hover { background: #3730a3; }
+    .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+    .btn-outline:hover { background: var(--cyan-light); }
+    .user-pill {
+      background: var(--cyan-light);
+      color: var(--primary-deep);
+      border: 1px solid var(--border-dark);
+      padding: 5px 12px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: none;
+    }
+
+    .main-layout {
+      max-width: 1450px;
+      margin: 10px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .categories-box {
+      background: #ffffff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .cat-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--primary-dark); margin-bottom: 6px; display: block; }
+    .categories-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cat-btn {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 5px 11px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      cursor: pointer;
+    }
+    .cat-btn:hover { background: #e0f2fe; }
+    .cat-btn.active { background: var(--primary) !important; color: #ffffff !important; border-color: var(--primary-dark) !important; }
+
+    .catalog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .search-box { width: 260px; }
+    .search-box input { width: 100%; padding: 7px 12px; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 0.85rem; }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+    }
+    .product-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .tag-category {
+      display: inline-block;
+      background: var(--cyan-light);
+      color: var(--primary-dark);
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .product-name { font-size: 0.9rem; font-weight: 800; margin-bottom: 3px; color: var(--primary-deep); }
+    .product-desc { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; min-height: 28px; line-height: 1.25; }
+    .product-meta { display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #f0f9ff; margin-bottom: 8px; font-size: 0.75rem; }
+    .product-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .price { font-size: 1.1rem; font-weight: 900; color: var(--primary-dark); }
+    .btn-add { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.78rem; }
+
+    .cart-panel {
+      background: var(--card-bg);
+      border: 2px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 12px;
+      position: sticky;
+      top: 60px;
+      height: calc(100vh - 75px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.08);
+    }
+    .cart-panel h2 {
+      font-size: 1.05rem;
+      color: var(--primary-deep);
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid var(--cyan-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart-items-list {
+      max-height: 80px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+      margin-bottom: 4px;
+    }
+    .cart-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+    .qty-btn { background: var(--cyan-light); border: 1px solid var(--border-dark); color: var(--primary-dark); border-radius: 4px; width: 18px; height: 18px; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
+
+    .qr-container-box {
+      background: #ffffff;
+      border: 1.5px solid var(--border-dark);
+      border-radius: 10px;
+      padding: 6px;
+      text-align: center;
+      margin: 2px 0;
+    }
+    .qr-badge {
+      background: var(--primary);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 2px;
+    }
+    .qr-img {
+      width: 125px;
+      height: 125px;
+      border: 2px solid var(--border-dark);
+      border-radius: 6px;
+      display: block;
+      margin: 0 auto 3px;
+    }
+    .qr-text-meta {
+      font-size: 0.7rem;
+      color: var(--primary-deep);
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .receipt-upload-box {
+      background: var(--cyan-light);
+      border: 1px dashed var(--primary);
+      border-radius: 6px;
+      padding: 5px;
+      font-size: 0.7rem;
+      margin-top: 4px;
+    }
+    .receipt-upload-box input { display: none; }
+    .receipt-label { cursor: pointer; color: var(--primary-deep); font-weight: 700; display: block; }
+    .receipt-status { color: #047857; font-weight: bold; margin-top: 2px; }
+
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary-deep);
+      border-top: 1.5px solid var(--border);
+      padding-top: 6px;
+      margin: 2px 0 6px;
+    }
+    .btn-checkout {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 9px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-checkout:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* CONSOLA DE ADMINISTRADOR */
+    .admin-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      border: 2px solid #e0e7ff;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.05);
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e0e7ff;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 12px;
+    }
+    .admin-table th, .admin-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+    .admin-table th { background: #f8fafc; color: var(--text-muted); font-weight: 700; }
+
+    /* MODALES */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 74, 110, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .auth-card { background: white; width: 360px; border-radius: 12px; padding: 20px; border: 2px solid var(--border-dark); }
+    .auth-card h3 { font-size: 1.2rem; color: var(--primary-deep); margin-bottom: 4px; text-align: center; }
+    .auth-card p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; text-align: center; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--primary-deep); margin-bottom: 3px; }
+    .form-group input { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+    .auth-switch { text-align: center; margin-top: 10px; font-size: 0.78rem; }
+    .auth-switch a { color: var(--primary); font-weight: 700; cursor: pointer; }
+
+    .ticket-card {
+      background: white;
+      width: 380px;
+      border-radius: 12px;
+      padding: 18px;
+      font-family: 'Courier New', Courier, monospace;
+      border: 2px solid var(--primary);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .ticket-header { text-align: center; border-bottom: 2px dashed #0284c7; padding-bottom: 8px; margin-bottom: 8px; }
+    .ticket-header h2 { font-size: 1.2rem; color: #0284c7; }
+    .ticket-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px; }
+    .ticket-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.8rem; }
+    .ticket-table th { border-bottom: 2px solid #000; text-align: left; padding: 4px 0; }
+    .ticket-table td { padding: 3px 0; }
+    .ticket-total { border-top: 2px dashed #0284c7; padding-top: 6px; font-size: 1.1rem; font-weight: bold; display: flex; justify-content: space-between; color: #0c4a6e; }
+
+    .alert { padding: 10px; border-radius: 6px; margin-bottom: 10px; display: none; font-size: 0.85rem; font-weight: 700; }
+    .alert-error { background: #fee2e2; color: #991b1b; }
+    .alert-success { background: #e0f2fe; color: #0369a1; }
+  </style>
+</head>
+<body>
+
+  <!-- CABECERA -->
+  <header>
+    <div class="brand-container" onclick="showCustomerView()">
+      <svg class="brand-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="22" fill="#38BDF8"/>
+        <path d="M50 20V80M20 50H80" stroke="white" stroke-width="16" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="10" fill="#0284C7"/>
+      </svg>
+      <div class="brand-title">
+        <span class="part-farma">Farma</span><span class="part-pos">POS</span>
+      </div>
+    </div>
+
+    <div class="user-nav">
+      <span class="user-pill" id="clientPill">👤 Usuario Conectado</span>
+      <button class="btn-header btn-outline" id="btnRegisterNav" onclick="openRegisterModal()">Registrarse</button>
+      <button class="btn-header" id="btnLoginNav" onclick="openLoginModal()">Iniciar Sesión</button>
+    </div>
+  </header>
+
+  <!-- ==================== VISTA CLIENTE / MOSTRADOR ==================== -->
+  <div class="main-layout" id="customerView">
+    <main>
+      <div id="alertBox" class="alert"></div>
+
+      <div class="categories-box">
+        <span class="cat-label">Categorías:</span>
+        <div class="categories-bar">
+          <button class="cat-btn active" onclick="selectCategory('TODOS')">Todos</button>
+          <button class="cat-btn" onclick="selectCategory('Analgésicos')">Analgésicos</button>
+          <button class="cat-btn" onclick="selectCategory('Antibióticos')">Antibióticos</button>
+          <button class="cat-btn" onclick="selectCategory('Digestivos')">Digestivos</button>
+          <button class="cat-btn" onclick="selectCategory('Respiratorios')">Respiratorios</button>
+          <button class="cat-btn" onclick="selectCategory('Antialérgicos')">Antialérgicos</button>
+          <button class="cat-btn" onclick="selectCategory('Crónicos')">Crónicos</button>
+        </div>
+      </div>
+
+      <div class="catalog-header">
+        <h2 id="categoryTitle" style="font-size: 1.15rem; font-weight: 800; color: var(--primary-deep);">Todos los Medicamentos</h2>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="🔍 Buscar por nombre o código..." oninput="filterData()">
+        </div>
+      </div>
+
+      <div class="products-grid" id="productsGrid">
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Cargando catálogo...</p>
+      </div>
+    </main>
+
+    <aside class="cart-panel">
+      <div>
+        <h2>
+          🛒 Mostrador FarmaPOS
+          <span id="cartCount" style="font-size: 0.75rem; background: var(--cyan-light); color: var(--primary-dark); padding: 2px 7px; border-radius: 10px;">0 ítems</span>
+        </h2>
+
+        <div class="cart-items-list" id="cartItemsList">
+          <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 10px;">
+            🔒 Inicia sesión para comprar.
+          </p>
+        </div>
+      </div>
+
+      <div class="qr-container-box">
+        <span class="qr-badge">PAGO ÚNICO EN MOSTRADOR</span>
+        <img class="qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=FARMAPOS-ABIGAIL-QUISPE-10000071275123" alt="QR FarmaPOS">
+        <div class="qr-text-meta">
+          <strong>Destinatario:</strong> Abigail Quispe<br>
+          <strong>Cta:</strong> 10000071275123 • <strong>Glosa:</strong> VICOCELL
+        </div>
+
+        <div class="receipt-upload-box">
+          <label class="receipt-label" for="receiptFile">📎 Adjuntar Comprobante QR</label>
+          <input type="file" id="receiptFile" accept="image/*" onchange="handleReceiptUpload(event)">
+          <div id="receiptStatus" class="receipt-status">⚠️ Pendiente de adjuntar</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="summary-total">
+          <span>Total a Pagar:</span>
+          <span id="totalAmount">Bs. 0.00</span>
+        </div>
+        <button class="btn-checkout" id="checkoutBtn" disabled onclick="submitSale()">Confirmar Pago y Emitir Factura</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ==================== VISTA ADMINISTRADOR ==================== -->
+  <div id="adminView" style="display: none; max-width: 1450px; margin: 16px auto; padding: 0 16px;">
+    <div class="admin-container">
+      <div class="admin-header">
+        <div>
+          <h2 style="font-size: 1.3rem; color: var(--admin-color);">📦 Gestión de Inventario de Farmacia</h2>
+          <small style="color: var(--text-muted);">Panel Exclusivo de Administración • Control de Lotes y Vencimientos</small>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-header btn-admin" onclick="openAddMedicineModal()">+ Nuevo Medicamento</button>
+          <button class="btn-header btn-outline" onclick="logoutAdmin()">Cerrar Sesión Admin</button>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="admin-table" id="adminInventoryTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Lote</th>
+              <th>Vencimiento</th>
+              <th>Stock</th>
+              <th>Precio</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="8" style="text-align: center;">Cargando inventario...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR NUEVO MEDICAMENTO (ADMIN) -->
+  <div class="modal-backdrop" id="addMedModal">
+    <div class="auth-card">
+      <h3 style="color: var(--admin-color);">Nuevo Medicamento</h3>
+      <p>Registra producto con lote y vencimiento</p>
+      <div class="form-group"><label>Código:</label><input type="text" id="mCode" placeholder="Ej. ANA-CLON-50"></div>
+      <div class="form-group"><label>Nombre:</label><input type="text" id="mName" placeholder="Ej. Clonazepam 2mg"></div>
+      <div class="form-group"><label>Categoría / Descripción:</label><input type="text" id="mDesc" placeholder="Ej. [Analgésicos] Alivio muscular"></div>
+      <div class="form-group"><label>Número de Lote:</label><input type="text" id="mBatch" placeholder="LOT-2026-X9"></div>
+      <div class="form-group"><label>Fecha de Expiración:</label><input type="date" id="mExp"></div>
+      <div class="form-group"><label>Stock Inicial:</label><input type="number" id="mStock" placeholder="50"></div>
+      <div class="form-group"><label>Precio (Bs.):</label><input type="number" step="0.5" id="mPrice" placeholder="10.00"></div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn-header btn-admin" style="flex:1;" onclick="saveNewMedicine()">Guardar</button>
+        <button class="btn-header btn-outline" style="flex:1;" onclick="closeAddMedModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRO CLIENTE -->
+  <div class="modal-backdrop" id="registerModal">
+    <div class="auth-card">
+      <h3>Crear Cuenta</h3>
+      <p>Regístrate para comprar en mostrador</p>
+      <div class="form-group"><label>Nombre Completo:</label><input type="text" id="regName" placeholder="Ej. Juan Pérez"></div>
+      <div class="form-group"><label>C.I. / NIT:</label><input type="text" id="regCI" placeholder="Ej. 7845129"></div>
+      <div class="form-group"><label>Contraseña:</label><input type="password" id="regPass" placeholder="••••••••"></div>
+      <button class="btn-header" style="width: 100%; padding: 10px;" onclick="registerUser()">Registrarse</button>
+      <div class="auth-switch">¿Ya tienes cuenta? <a onclick="switchToLogin()">Inicia sesión aquí</a></div>
+    </div>
+  </div>
+
+  <!-- MODAL: INICIAR SESIÓN (CLIENTES Y ADMIN) -->
+  <div class="modal-backdrop" id="loginModal">
+    <div class="auth-card">
+      <h3>Iniciar Sesión</h3>
+      <p>Ingresa tu C.I. o credenciales de usuario</p>
+      <div class="form-group"><label>C.I. / NIT / Usuario:</label><input type="text" id="loginCI" placeholder="Documento o usuario admin"></div>
+      <div class="form-group"><label>Contraseña:</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+      <button class="btn-header" style="width: 100%; padding: 10px;" onclick="loginUser()">Acceder</button>
+      <div class="auth-switch">¿No tienes cuenta? <a onclick="switchToRegister()">Regístrate aquí</a></div>
+    </div>
+  </div>
+
+  <!-- MODAL FACTURA FINAL -->
+  <div class="modal-backdrop" id="ticketModal">
+    <div class="ticket-card">
+      <div class="ticket-header">
+        <h2>FARMACIA FARMAPOS</h2>
+        <p>Casa Matriz - Yacuiba, Bolivia</p>
+        <p>NIT: 1029384756 • AUTORIZACIÓN: 290401</p>
+      </div>
+      <div class="ticket-row"><span>FACTURA N°:</span><strong id="tNumber">FAC-2026-0000</strong></div>
+      <div class="ticket-row"><span>FECHA/HORA:</span><span id="tDate">--/--/----</span></div>
+      <div class="ticket-row"><span>CLIENTE:</span><strong id="tClient">--</strong></div>
+      <div class="ticket-row"><span>CI / NIT:</span><span id="tCI">--</span></div>
+      <div class="ticket-row"><span>COMPROBANTE QR:</span><strong>ADJUNTADO OK</strong></div>
+
+      <table class="ticket-table">
+        <thead>
+          <tr>
+            <th>CANT</th>
+            <th>DESCRIPCIÓN</th>
+            <th style="text-align: right;">SUBTOTAL</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+
+      <div class="ticket-total">
+        <span>TOTAL COBRADO:</span>
+        <span id="tTotal">Bs. 0.00</span>
+      </div>
+
+      <div style="margin-top: 12px; display: flex; gap: 8px; font-family: sans-serif;">
+        <button class="btn-header" style="flex: 1;" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn-header btn-outline" style="flex: 1;" onclick="closeTicket()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:4000/api';
+    let inventory = [];
+    let cart = [];
+    let selectedCategory = 'TODOS';
+    let currentUser = null;
+    let isAdminActive = false;
+    let receiptAttached = false;
+
+    // CREDENCIALES ADMINISTRATIVAS
+    const ADMIN_CREDENTIALS = {
+      user: 'admin',
+      pass: 'admin123'
+    };
+
+    function getCategory(med) {
+      const c = (med.code || '').toUpperCase();
+      const n = (med.name || '').toLowerCase();
+      const d = (med.description || '').toLowerCase();
+
+      if (c.startsWith('ANA-') || d.includes('analgésicos') || n.includes('paracetamol') || n.includes('ibuprofeno')) return 'Analgésicos';
+      if (c.startsWith('ANT-') || d.includes('antibióticos') || n.includes('amoxicilina') || n.includes('azitromicina') || n.includes('ciprofloxacino')) return 'Antibióticos';
+      if (c.startsWith('DIG-') || d.includes('digestivos') || n.includes('omeprazol') || n.includes('domperidona')) return 'Digestivos';
+      if (c.startsWith('RES-') || d.includes('respiratorios') || n.includes('ambroxol') || n.includes('salbutamol')) return 'Respiratorios';
+      if (c.startsWith('ALE-') || d.includes('antialérgicos') || n.includes('loratadina') || n.includes('cetirizina')) return 'Antialérgicos';
+      if (c.startsWith('CRO-') || d.includes('crónicos') || n.includes('losartán') || n.includes('metformina')) return 'Crónicos';
+      return 'Otros';
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(`${API_URL}/medicines`);
+        inventory = await res.json();
+        filterData();
+        if (isAdminActive) renderAdminInventory();
+      } catch (e) {
+        showAlert('No se pudo conectar con el servidor FarmaPOS.', true);
+      }
+    }
+
+    /* INICIO DE SESIÓN INTEGRADO */
+    function loginUser() {
+      const u = document.getElementById('loginCI').value.trim();
+      const p = document.getElementById('loginPass').value.trim();
+
+      // 1. Comprobar si son credenciales de Administrador
+      if (u.toLowerCase() === ADMIN_CREDENTIALS.user && p === ADMIN_CREDENTIALS.pass) {
+        isAdminActive = true;
+        currentUser = { name: 'Administrador Farmacia', ci: 'ADMIN' };
+        document.getElementById('loginModal').style.display = 'none';
+
+        // Actualizar UI
+        document.getElementById('btnRegisterNav').style.display = 'none';
+        document.getElementById('btnLoginNav').textContent = 'Cerrar Sesión Admin';
+        document.getElementById('btnLoginNav').onclick = logoutAdmin;
+        document.getElementById('clientPill').style.display = 'inline-block';
+        document.getElementById('clientPill').textContent = `🛡️ Administrador`;
+
+        showAdminView();
+        showAlert('Bienvenido al Panel de Administración de FarmaPOS.', false);
+        return;
+      }
+
+      // 2. Si no es admin, buscar cuenta de Cliente
+      const savedData = localStorage.getItem(`farmapos_user_${u}`);
+      if (!savedData) {
+        alert('Credenciales incorrectas o no existe la cuenta.');
+        return;
+      }
+
+      const client = JSON.parse(savedData);
+      if (client.pass !== p) {
+        alert('Contraseña incorrecta.');
+        return;
+      }
+
+      isAdminActive = false;
+      currentUser = client;
+      document.getElementById('loginModal').style.display = 'none';
+
+      document.getElementById('btnRegisterNav').style.display = 'none';
+      document.getElementById('btnLoginNav').textContent = 'Cerrar Sesión';
+      document.getElementById('btnLoginNav').onclick = logoutUser;
+      document.getElementById('clientPill').style.display = 'inline-block';
+      document.getElementById('clientPill').textContent = `👤 ${client.name} (CI: ${client.ci})`;
+
+      document.getElementById('checkoutBtn').disabled = false;
+      showCustomerView();
+      updateCart();
+      showAlert(`Sesión iniciada como ${client.name}.`, false);
+    }
+
+    function showAdminView() {
+      document.getElementById('customerView').style.display = 'none';
+      document.getElementById('adminView').style.display = 'block';
+      renderAdminInventory();
+    }
+
+    function showCustomerView() {
+      document.getElementById('customerView').style.display = 'grid';
+      document.getElementById('adminView').style.display = 'none';
+      filterData();
+    }
+
+    function logoutAdmin() {
+      isAdminActive = false;
+      currentUser = null;
+      showCustomerView();
+      document.getElementById('btnRegisterNav').style.display = 'inline-block';
+      const btn = document.getElementById('btnLoginNav');
+      btn.textContent = 'Iniciar Sesión';
+      btn.onclick = openLoginModal;
+      document.getElementById('clientPill').style.display = 'none';
+      showAlert('Sesión de Administrador cerrada.', false);
+    }
+
+    function logoutUser() {
+      currentUser = null;
+      cart = [];
+      document.getElementById('btnRegisterNav').style.display = 'inline-block';
+      const btn = document.getElementById('btnLoginNav');
+      btn.textContent = 'Iniciar Sesión';
+      btn.onclick = openLoginModal;
+      document.getElementById('clientPill').style.display = 'none';
+      document.getElementById('checkoutBtn').disabled = true;
+      updateCart();
+      showAlert('Sesión cerrada.', false);
+    }
+
+    function renderAdminInventory() {
+      const tbody = document.querySelector('#adminInventoryTable tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      inventory.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.id}</td>
+          <td><code>${m.code}</code></td>
+          <td><strong>${m.name}</strong></td>
+          <td>${m.batchNumber}</td>
+          <td>${new Date(m.expirationDate).toISOString().split('T')[0]}</td>
+          <td><strong style="color:${m.stock < 10 ? 'red' : 'green'}">${m.stock} uds.</strong></td>
+          <td>Bs. ${m.price.toFixed(2)}</td>
+          <td>${m.isSellable ? '✅ Apto' : '❌ Bloqueado'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openAddMedicineModal() { document.getElementById('addMedModal').style.display = 'flex'; }
+    function closeAddMedModal() { document.getElementById('addMedModal').style.display = 'none'; }
+
+    async function saveNewMedicine() {
+      const code = document.getElementById('mCode').value.trim();
+      const name = document.getElementById('mName').value.trim();
+      const description = document.getElementById('mDesc').value.trim();
+      const batchNumber = document.getElementById('mBatch').value.trim();
+      const expirationDate = document.getElementById('mExp').value;
+      const stock = parseInt(document.getElementById('mStock').value) || 0;
+      const price = parseFloat(document.getElementById('mPrice').value) || 0;
+
+      if (!code || !name || !batchNumber || !expirationDate || price <= 0) {
+        alert('Completa todos los campos obligatorios.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/medicines`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, name, description, batchNumber, expirationDate, stock, price })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Error al guardar.');
+          return;
+        }
+        alert('Medicamento registrado en el catálogo.');
+        closeAddMedModal();
+        loadData();
+      } catch (err) {
+        alert('Error de conexión.');
+      }
+    }
+
+    function handleReceiptUpload(e) {
+      const file = e.target.files[0];
+      const statusBox = document.getElementById('receiptStatus');
+      if (file) {
+        receiptAttached = true;
+        statusBox.textContent = `✅ Adjunto: ${file.name.substring(0, 15)}...`;
+        statusBox.style.color = '#047857';
+      } else {
+        receiptAttached = false;
+        statusBox.textContent = '⚠️ Pendiente de adjuntar';
+        statusBox.style.color = 'var(--danger)';
+      }
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim() === cat);
+      });
+      document.getElementById('categoryTitle').textContent = cat === 'TODOS' ? 'Todos los Medicamentos' : `Categoría: ${cat}`;
+      filterData();
+    }
+
+    function filterData() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      let filtered = inventory;
+
+      if (selectedCategory !== 'TODOS') {
+        filtered = filtered.filter(m => getCategory(m) === selectedCategory);
+      }
+
+      if (q) {
+        filtered = filtered.filter(m => m.name.toLowerCase().includes(q) || m.code.toLowerCase().includes(q) || (m.description && m.description.toLowerCase().includes(q)));
+      }
+
+      renderProducts(filtered);
+    }
+
+    function renderProducts(items) {
+      const grid = document.getElementById('productsGrid');
+      grid.innerHTML = '';
+
+      if (items.length === 0) {
+        grid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.85rem;">No hay medicamentos en esta categoría.</p>';
+        return;
+      }
+
+      items.forEach(med => {
+        const catName = getCategory(med);
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div>
+            <span class="tag-category">${catName}</span>
+            <div class="product-name">${med.name}</div>
+            <div class="product-desc">${med.description || ''}</div>
+          </div>
+          <div>
+            <div class="product-meta">
+              <span>Lote: <strong>${med.batchNumber}</strong></span>
+              <span style="font-weight: 700; color: ${med.stock > 10 ? 'var(--primary-dark)' : 'var(--danger)'};">
+                ${med.stock} disp.
+              </span>
+            </div>
+            <div class="product-bottom">
+              <span class="price">Bs. ${med.price.toFixed(2)}</span>
+              <button class="btn-add" onclick="addToCart(${med.id})">+ Agregar</button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function openRegisterModal() { document.getElementById('registerModal').style.display = 'flex'; document.getElementById('loginModal').style.display = 'none'; }
+    function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; document.getElementById('registerModal').style.display = 'none'; }
+    function switchToRegister() { openRegisterModal(); }
+    function switchToLogin() { openLoginModal(); }
+
+    function registerUser() {
+      const name = document.getElementById('regName').value.trim();
+      const ci = document.getElementById('regCI').value.trim();
+      const pass = document.getElementById('regPass').value.trim();
+
+      if (!name || !ci || !pass) {
+        alert('Por favor, completa todos los campos.');
+        return;
+      }
+
+      localStorage.setItem(`farmapos_user_${ci}`, JSON.stringify({ name, ci, pass }));
+      alert('¡Cuenta creada con éxito! Ahora inicia sesión.');
+      document.getElementById('registerModal').style.display = 'none';
+      openLoginModal();
+      document.getElementById('loginCI').value = ci;
+    }
+
+    function addToCart(id) {
+      if (!currentUser) {
+        showAlert('Debes registrarte o iniciar sesión para comprar medicamentos.', true);
+        openLoginModal();
+        return;
+      }
+
+      const med = inventory.find(m => m.id === id);
+      if (!med) return;
+
+      const existing = cart.find(c => c.medicineId === id);
+      if (existing) {
+        if (existing.quantity + 1 > med.stock) {
+          showAlert(`Existencias máximas alcanzadas para ${med.name}.`, true);
+          return;
+        }
+        existing.quantity += 1;
+      } else {
+        cart.push({ medicineId: med.id, name: med.name, price: med.price, quantity: 1, maxStock: med.stock });
+      }
+      updateCart();
+    }
+
+    function updateQty(id, delta) {
+      const item = cart.find(c => c.medicineId === id);
+      if (!item) return;
+
+      const n = item.quantity + delta;
+      if (n <= 0) {
+        cart = cart.filter(c => c.medicineId !== id);
+      } else if (n > item.maxStock) {
+        showAlert('Existencias máximas alcanzadas.', true);
+        return;
+      } else {
+        item.quantity = n;
+      }
+      updateCart();
+    }
+
+    function updateCart() {
+      const list = document.getElementById('cartItemsList');
+      const totalSpan = document.getElementById('totalAmount');
+      const count = document.getElementById('cartCount');
+
+      if (!currentUser) {
+        list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 10px;">🔒 Inicia sesión para comprar.</p>';
+        document.getElementById('checkoutBtn').disabled = true;
+        totalSpan.textContent = 'Bs. 0.00';
+        count.textContent = '0 ítems';
+        return;
+      }
+
+      if (cart.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-top: 10px;">El carrito está vacío.</p>';
+        totalSpan.textContent = 'Bs. 0.00';
+        count.textContent = '0 ítems';
+        return;
+      }
+
+      let total = 0, q = 0;
+      list.innerHTML = '';
+      cart.forEach(item => {
+        const sub = item.price * item.quantity;
+        total += sub;
+        q += item.quantity;
+        const row = document.createElement('div');
+        row.className = 'cart-row';
+        row.innerHTML = `
+          <div>
+            <div style="font-weight: 700; color: var(--primary-deep);">${item.name}</div>
+            <small style="color: var(--text-muted);">Bs. ${item.price.toFixed(2)} c/u</small>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button class="qty-btn" onclick="updateQty(${item.medicineId}, -1)">-</button>
+            <span style="font-weight: bold;">${item.quantity}</span>
+            <button class="qty-btn" onclick="updateQty(${item.medicineId}, 1)">+</button>
+            <span style="font-weight: 800; min-width: 50px; text-align: right; color: var(--primary-dark);">Bs. ${sub.toFixed(2)}</span>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+
+      count.textContent = `${q} ítems`;
+      totalSpan.textContent = `Bs. ${total.toFixed(2)}`;
+    }
+
+    async function submitSale() {
+      if (!currentUser) {
+        showAlert('Debes iniciar sesión para realizar la compra.', true);
+        openLoginModal();
+        return;
+      }
+
+      if (cart.length === 0) {
+        showAlert('El carrito está vacío.', true);
+        return;
+      }
+
+      if (!receiptAttached) {
+        showAlert('Por favor, adjunta la captura de tu comprobante de pago QR.', true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/sales`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: `${currentUser.name} (CI: ${currentUser.ci})`,
+            items: cart.map(c => ({ medicineId: c.medicineId, quantity: c.quantity }))
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          showAlert(data.error || 'Error al procesar el pago.', true);
+          return;
+        }
+
+        displayTicket(data.invoice);
+        cart = [];
+        receiptAttached = false;
+        document.getElementById('receiptFile').value = '';
+        document.getElementById('receiptStatus').textContent = '⚠️ Pendiente de adjuntar';
+        document.getElementById('receiptStatus').style.color = 'var(--danger)';
+        updateCart();
+        loadData();
+      } catch (err) {
+        showAlert('Error de conexión con el backend de FarmaPOS.', true);
+      }
+    }
+
+    function displayTicket(invoice) {
+      document.getElementById('tNumber').textContent = invoice.invoiceNumber;
+      document.getElementById('tDate').textContent = new Date(invoice.createdAt).toLocaleString();
+      document.getElementById('tClient').textContent = currentUser.name;
+      document.getElementById('tCI').textContent = currentUser.ci;
+      document.getElementById('tTotal').textContent = `Bs. ${invoice.totalAmount.toFixed(2)}`;
+
+      const tbody = document.getElementById('tBody');
+      tbody.innerHTML = '';
+
+      invoice.items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${it.quantity}</td>
+          <td>${it.medicine.name}</td>
+          <td style="text-align: right;">Bs. ${it.subtotal.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('ticketModal').style.display = 'flex';
+    }
+
+    function closeTicket() { document.getElementById('ticketModal').style.display = 'none'; }
+
+    function showAlert(msg, isError) {
+      const box = document.getElementById('alertBox');
+      box.textContent = msg;
+      box.className = `alert ${isError ? 'alert-error' : 'alert-success'}`;
+      box.style.display = 'block';
+      setTimeout(() => { box.style.display = 'none'; }, 4000);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
